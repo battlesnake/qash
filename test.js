@@ -80,11 +80,17 @@ const tests = [
 	{ syntax: 'nested ({first word} [within {second word}]|test choices)', expr: 'nested test choices' },
 	{ syntax: 'nested ({first word} [within {second word}]|test {message})', expr: 'nested test choices' },
 
-	/* TODO fix */
+	/* TODO fix with backtracking */
 	{ syntax: 'nested (test choices|{first word} [within {second word}])', expr: 'nested capture' },
 	{ syntax: 'nested (test {message}|{first word} [within {second word}])', expr: 'nested capture within option' },
 	{ syntax: 'nested (test choices|{first word} [within {second word}])', expr: 'nested test choices' },
 	{ syntax: 'nested (test {message}|{first word} [within {second word}])', expr: 'nested test choices' },
+
+	{ syntax: 'command {argument}', expr: 'command here' },
+	{ syntax: 'command subcommand {argument}', expr: 'command subcommand here' },
+	{ syntax: 'command subcommand {arg1} {arg2}', expr: 'command subcommand here there' },
+	{ syntax: 'command subcommand [{arg1}] {arg2}', expr: 'command subcommand here there' },
+	{ syntax: 'command subcommand [{arg1}] {arg2}', expr: 'command subcommand there' },
 
 ];
 
