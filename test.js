@@ -3,25 +3,35 @@ const sq = require('shell-quote');
 const spec = require('./spec');
 const parse = require('./parse');
 
+let pass = 0;
+let fail = 0;
 
-const test = (idx, fails, syntax, expr) => {
+const test = (idx, fails, syntax, expr, mode) => {
 	let res = '';
 	let err = null;
 	let tree = spec(syntax);
 	let args = sq.parse(expr);
 	try {
-		res = parse(tree, args);
+		res = parse(tree, args, mode);
 	} catch (e) {
 		err = e;
 	}
-	if (fails ^ !!err) {
-		console.error(`\x1b[1;31mTest ${idx} failed:\x1b[0m `, err.message);
+	if (err !== null ^ fails) {
+		if (fails) {
+			console.error(`\x1b[1;31mTest ${idx} failed:\x1b[0m `, 'Assertion was supposed to fail but didn\'t');
+		} else {
+			console.error(`\x1b[1;31mTest ${idx} failed:\x1b[0m `, err.message);
+		}
 		console.info(`Expression : ${expr}`);
 		console.info(`Syntax     : ${syntax}`);
+		console.info(`Mode       : ${mode}`);
 		console.info(`Arguments  : ${sq.quote(args)}`);
 		console.info(`Help       : ${tree.toHelp()}`);
+		console.log('');
+		fail++;
 	} else {
-//		console.error(`Test ${idx} passed: `, fails ? 'Fails as expeted' : res);
+//		console.info(`Test ${idx} passed`);
+		pass++;
 	}
 };
 
@@ -76,11 +86,11 @@ const tests = [
 
 	{ syntax: 'nested ({first word} [within {second word}]|test {message})', expr: 'nested capture' },
 	{ syntax: 'nested ({first word} [within {second word}]|test {message})', expr: 'nested capture within option' },
-	{ syntax: 'nested ({first word} [within {second word}]|{message})', expr: 'nested choices' },
+	{ syntax: 'nested ({first word} [within {second word}]|{message})', expr: 'nested choices', fails: true },
+	{ syntax: 'nested ({first word} [within {second word}]|{message})', expr: 'nested choices', mode: 'complete' },
 	{ syntax: 'nested ({first word} [within {second word}]|test choices)', expr: 'nested test choices' },
 	{ syntax: 'nested ({first word} [within {second word}]|test {message})', expr: 'nested test choices' },
 
-	/* TODO fix with backtracking */
 	{ syntax: 'nested (test choices|{first word} [within {second word}])', expr: 'nested capture' },
 	{ syntax: 'nested (test {message}|{first word} [within {second word}])', expr: 'nested capture within option' },
 	{ syntax: 'nested (test choices|{first word} [within {second word}])', expr: 'nested test choices' },
@@ -94,4 +104,7 @@ const tests = [
 
 ];
 
-tests.forEach(({ fails = false, syntax, expr }, idx) => test(idx, fails, syntax, expr));
+tests.forEach(({ fails = false, syntax, expr, mode = 'one' }, idx) => test(idx, fails, syntax, expr, mode));
+
+console.info(`Total: ${pass + fail}`);
+console.info(`Fail : ${fail}`);

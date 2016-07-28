@@ -2,7 +2,8 @@ const { Group, Word, Optional, Capture, Choice } = require('./grammar');
 
 module.exports = syntax => (syntax + '\0').split('').reduce(({ stack, word }, c, i) => {
 	const top = stack[0];
-	if (/[-\w]/.test(c)) {
+	/* Word */
+	if (/[-\w]/.test(c) || top instanceof Capture && c !== top.closeChar && !/\s/.test(c)) {
 		if (word === null) {
 			word = new Word();
 			top.append(word);
@@ -12,9 +13,11 @@ module.exports = syntax => (syntax + '\0').split('').reduce(({ stack, word }, c,
 	} else if (word) {
 		word.close();
 	}
+	/* Whitespace */
 	if (/\s/.test(c)) {
 		return { stack, word: null };
 	}
+	/* Group / Capture */
 	const push = x => (stack.unshift(x), top.append(x), null);
 	const close = x => {
 		if (top.closeChar === x) {
@@ -29,7 +32,7 @@ module.exports = syntax => (syntax + '\0').split('').reduce(({ stack, word }, c,
 	switch (c) {
 	case '|':
 		if (top instanceof Group) {
-			top.closeChoice();
+			top.endPhrase();
 			break;
 		}
 		throw unexpected();
@@ -51,7 +54,10 @@ module.exports = syntax => (syntax + '\0').split('').reduce(({ stack, word }, c,
 		throw unexpected();
 	case '\0':
 		if (stack.length !== 1) {
-			throw new Error('Missing close parentheses');
+			throw new Error('Missing close parentheses: ' + stack
+				.map(x => x.closeChar)
+				.filter(x => x)
+				.join(' '));
 		}
 		top.close();
 		return stack.shift();
