@@ -37,6 +37,9 @@ const test = (idx, fails, syntax, expr, mode) => {
 
 const tests = [
 
+	{ syntax: '', expr: '' },
+	{ syntax: '', expr: 'word', fails: true },
+
 	{ syntax: 'word', expr: 'word' },
 	{ syntax: 'word', expr: '', fails: true },
 	{ syntax: 'word', expr: 'two words', fails: true },
@@ -108,3 +111,5 @@ tests.forEach(({ fails = false, syntax, expr, mode = 'one' }, idx) => test(idx, 
 
 console.info(`Total: ${pass + fail}`);
 console.info(`Fail : ${fail}`);
+
+process.exit(fail ? 1 : 0);
