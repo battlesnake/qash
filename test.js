@@ -1,4 +1,5 @@
 const sq = require('shell-quote');
+const _ = require('lodash');
 
 const spec = require('./spec');
 const parse = require('./parse');
@@ -6,13 +7,20 @@ const parse = require('./parse');
 let pass = 0;
 let fail = 0;
 
-const test = (idx, fails, syntax, expr, mode) => {
+const test = (idx, fails, syntax, expr, mode, captures) => {
 	let res = '';
 	let err = null;
-	let tree = spec(syntax);
-	let args = sq.parse(expr);
+	const tree = spec(syntax);
+	const args = sq.parse(expr);
 	try {
 		res = parse(tree, args, mode);
+		if (captures && !_.isEqual(captures, _.fromPairs([...res.capture]))) {
+			console.log('Expect');
+			console.dir(captures);
+			console.log('Actual');
+			console.dir(_.fromPairs([...res.capture]));
+			err = err || new Error('Capture values differ');
+		}
 	} catch (e) {
 		err = e;
 	}
@@ -105,9 +113,46 @@ const tests = [
 	{ syntax: 'command subcommand [{arg1}] {arg2}', expr: 'command subcommand here there' },
 	{ syntax: 'command subcommand [{arg1}] {arg2}', expr: 'command subcommand there' },
 
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol end',
+		captures: { arg: 'lol' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 end',
+		captures: { arg: 'lol', red: '1' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 yellow 2 end',
+		captures: { arg: 'lol', red: '1', yellow: '2' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 yellow 2 green 3 end',
+		captures: { arg: 'lol', red: '1', yellow: '2', green: '3' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 yellow 2 green 3 blue 4 end',
+		captures: { arg: 'lol', red: '1', yellow: '2', green: '3', blue: '4' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 green 3 end',
+		captures: { arg: 'lol', red: '1', green: '3' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 green 3 blue 4 end',
+		captures: { arg: 'lol', red: '1', green: '3', blue: '4' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol red 1 yellow 2 blue 4 end',
+		captures: { arg: 'lol', red: '1', yellow: '2', blue: '4' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol yellow 2 end', fails: true,
+		captures: { arg: 'lol', red: '1', yellow: '2', blue: '4' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol green 3 end',
+		captures: { arg: 'lol', green: '3' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol blue 4 end',
+		captures: { arg: 'lol', blue: '4' } },
+	{ syntax: 'begin {arg} [red {red} [yellow {yellow}]] [green {green}] [blue {blue}] end',
+		expr: 'begin lol green 3 blue 4 end',
+		captures: { arg: 'lol', green: '3', blue: '4' } },
+
 ];
 
-tests.forEach(({ fails = false, syntax, expr, mode = 'one' }, idx) => test(idx, fails, syntax, expr, mode));
+tests.forEach(({ fails = false, syntax, expr, mode = 'one', captures = null }, idx) => test(idx, fails, syntax, expr, mode, captures));
 
 console.info(`Total: ${pass + fail}`);
 console.info(`Fail : ${fail}`);
