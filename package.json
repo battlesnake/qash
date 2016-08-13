@@ -1,7 +1,7 @@
 {
   "name": "qash",
   "version": "1.0.1",
-  "description": "Quite awful shell",
+  "description": "Quite awful shell (parser)",
   "main": "index.js",
   "scripts": {
     "test": "node test"
